@@ -74,7 +74,7 @@ $("authBtn").addEventListener("click", () => {
 
 function onConnected() {
   setStatus(true, "Conectado. Elegí un período y presioná “Actualizar datos”.");
-  $("settingsPanel").hidden = false;
+  $("settingsPanel").hidden = true;
   $("syncPanel").hidden = false;
   $("filtersPanel").hidden = false;
   $("viewPanel").hidden = false;
@@ -100,10 +100,22 @@ function setStatus(ok, text) {
 $("settingsToggle").addEventListener("click", () => {
   $("settingsPanel").hidden = !$("settingsPanel").hidden;
 });
+// Acepta tanto un ID de carpeta pelado como una URL completa de Drive
+// (ej: https://drive.google.com/drive/folders/XXXX?usp=sharing) y devuelve solo el ID
+function extractFolderId(value) {
+  if (!value) return "";
+  const trimmed = value.trim();
+  const match = trimmed.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (match) return match[1];
+  return trimmed.split("?")[0]; // por si pegan la URL sin /folders/ o ya es un ID limpio
+}
+
 $("saveFolderBtn").addEventListener("click", () => {
-  const val = $("folderIdInput").value.trim();
-  if (!val) return;
+  const raw = $("folderIdInput").value.trim();
+  if (!raw) return;
+  const val = extractFolderId(raw);
   localStorage.setItem(CONFIG.FOLDER_KEY, val);
+  $("folderIdInput").value = val;
   $("settingsPanel").hidden = true;
   setStatus(true, "Carpeta guardada. Presioná “Actualizar datos” para sincronizar.");
 });
@@ -297,7 +309,7 @@ function updateCacheInfo() {
 $("syncBtn").addEventListener("click", runSync);
 
 async function runSync() {
-  const rootFolderId = (localStorage.getItem(CONFIG.FOLDER_KEY) || CONFIG.DEFAULT_ROOT_FOLDER_ID).trim();
+  const rootFolderId = extractFolderId(localStorage.getItem(CONFIG.FOLDER_KEY) || CONFIG.DEFAULT_ROOT_FOLDER_ID);
   const btn = $("syncBtn");
   btn.disabled = true;
   btn.textContent = "Buscando planillas...";
