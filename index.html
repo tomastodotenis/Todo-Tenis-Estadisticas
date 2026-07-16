@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0B3556" />
+<title>Top Ventas — Todo Tenis &amp; Running</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2246%22 fill=%22%23D6FF3F%22/><path d=%22M8 50h84M50 8v84%22 stroke=%22%230B3556%22 stroke-width=%226%22/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@700;800&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER / SCOREBOARD -->
+  <header class="board">
+    <div class="board-top">
+      <div class="brand">
+        <span class="brand-mark">TT&amp;R</span>
+        <div class="brand-text">
+          <h1>Top Ventas</h1>
+          <p>Todo Tenis &amp; Running</p>
+        </div>
+      </div>
+      <button id="authBtn" class="btn btn-accent">Conectar con Drive</button>
+    </div>
+
+    <div class="board-status" id="statusBar">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Sin conectar. Iniciá sesión con Google para leer la carpeta de ventas.</span>
+    </div>
+  </header>
+
+  <!-- SETTINGS (folder id) -->
+  <section class="panel panel-settings" id="settingsPanel" hidden>
+    <label for="folderIdInput">ID de carpeta raíz en Drive</label>
+    <div class="row-inline">
+      <input type="text" id="folderIdInput" placeholder="1DuyhPClinMyDpSaJKIcHLCVoHGkj5NuM" />
+      <button id="saveFolderBtn" class="btn btn-ghost">Guardar</button>
+    </div>
+    <p class="hint">Se recorren año → mes → planillas → pestañas de día, de forma recursiva.</p>
+  </section>
+
+  <!-- SYNC -->
+  <section class="panel" id="syncPanel" hidden>
+    <div class="sync-row">
+      <button id="syncBtn" class="btn btn-primary">Actualizar datos</button>
+      <button id="settingsToggle" class="btn btn-ghost btn-icon" title="Configuración">⚙</button>
+      <div class="sync-progress" id="syncProgress"></div>
+    </div>
+    <div class="progress-track" id="progressTrack" hidden>
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </section>
+
+  <!-- FILTERS -->
+  <section class="panel filters" id="filtersPanel" hidden>
+    <div class="segmented" id="periodSegmented">
+      <button data-period="day" class="seg active">Día</button>
+      <button data-period="week" class="seg">Semana</button>
+      <button data-period="month" class="seg">Mes</button>
+      <button data-period="range" class="seg">Rango</button>
+    </div>
+
+    <div class="filter-controls" id="filterControls">
+      <input type="date" id="dayInput" />
+    </div>
+
+    <div class="filter-meta">
+      <span id="periodLabel">—</span>
+      <span id="totalUnitsLabel">0 unidades</span>
+    </div>
+  </section>
+
+  <!-- VIEW TOGGLE: PRODUCTOS / TALLES -->
+  <section class="panel" id="viewPanel" hidden>
+    <div class="segmented" id="viewSegmented">
+      <button data-view="products" class="seg active">Productos</button>
+      <button data-view="sizes" class="seg">Talles</button>
+    </div>
+    <div class="filter-controls" id="productPicker" hidden>
+      <label class="hint" style="margin:0 0 6px;">Ver talles de:</label>
+      <select id="productSelect"></select>
+    </div>
+  </section>
+
+  <!-- CHART VIEW TOGGLE -->
+  <section class="panel chart-panel" id="chartPanel" hidden>
+    <div class="chart-head">
+      <h2 id="chartTitle">Ranking de productos</h2>
+      <div class="segmented segmented-sm" id="chartSegmented">
+        <button data-chart="bar" class="seg active">Barras</button>
+        <button data-chart="pie" class="seg">Torta</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="mainChart"></canvas>
+    </div>
+    <p class="empty-state" id="chartEmpty" hidden>No hay ventas registradas en este período.</p>
+  </section>
+
+  <!-- LEADERBOARD TABLE -->
+  <section class="panel" id="tablePanel" hidden>
+    <div class="lb-head">
+      <span class="lb-rank">#</span>
+      <span class="lb-name" id="lbNameHead">Producto</span>
+      <span class="lb-units">Unidades</span>
+    </div>
+    <ol class="leaderboard" id="leaderboard"></ol>
+  </section>
+
+  <footer class="foot">
+    <span id="cacheInfo"></span>
+  </footer>
+
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

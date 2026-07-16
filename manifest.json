@@ -1,0 +1,15 @@
+{
+  "name": "Top Ventas — Todo Tenis & Running",
+  "short_name": "Top Ventas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B3556",
+  "theme_color": "#0B3556",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23D6FF3F'/%3E%3Cpath d='M8 50h84M50 8v84' stroke='%230B3556' stroke-width='6'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
