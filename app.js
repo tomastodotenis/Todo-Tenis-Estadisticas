@@ -52,13 +52,20 @@ function initAuth() {
     scope: CONFIG.SCOPES,
     callback: (resp) => {
       if (resp.error) {
-        setStatus(false, "No se pudo conectar: " + resp.error);
+        // Intento silencioso fallido (todavía no hay sesión de Google activa/autorizada
+        // en este navegador): dejamos el botón "Conectar con Drive" a mano.
+        setStatus(false, "Sin conectar. Tocá “Conectar con Drive” para empezar.");
         return;
       }
       accessToken = resp.access_token;
       onConnected();
     },
   });
+
+  // Al cargar la página, intentamos renovar el acceso sin mostrar ningún popup.
+  // Si el navegador ya tiene una sesión de Google activa y ya diste el permiso
+  // una vez antes, esto conecta solo, sin que nadie tenga que tocar nada.
+  tokenClient.requestAccessToken({ prompt: "" });
 }
 
 $("authBtn").addEventListener("click", () => {
@@ -120,6 +127,28 @@ $("saveFolderBtn").addEventListener("click", () => {
   setStatus(true, "Carpeta guardada. Presioná “Actualizar datos” para sincronizar.");
 });
 
+// Pide un token nuevo en silencio (sin popup) — se usa cuando el token
+// vigente venció a mitad de una sesión larga.
+function refreshTokenSilently() {
+  return new Promise((resolve) => {
+    tokenClient.callback = (resp) => {
+      if (!resp.error) accessToken = resp.access_token;
+      resolve();
+    };
+    tokenClient.requestAccessToken({ prompt: "" });
+  });
+}
+
+// fetch autenticado que reintenta una vez con token renovado si da 401
+async function authedFetch(url) {
+  let res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (res.status === 401) {
+    await refreshTokenSilently();
+    res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  }
+  return res;
+}
+
 // ============================================================
 // DRIVE — recorrido recursivo de carpetas
 // ============================================================
@@ -133,7 +162,7 @@ async function driveList(q, fields) {
     url.searchParams.set("pageSize", "1000");
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const res = await authedFetch(url);
     if (!res.ok) throw new Error(`Drive API error ${res.status}`);
     const data = await res.json();
     files = files.concat(data.files || []);
@@ -172,7 +201,7 @@ async function collectSpreadsheets(rootFolderId, onFolder) {
 // ============================================================
 async function fetchSpreadsheetTabs(spreadsheetId) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const res = await authedFetch(url);
   if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
   const data = await res.json();
   return (data.sheets || []).map((s) => s.properties.title);
@@ -184,7 +213,7 @@ async function fetchSpreadsheetValues(spreadsheetId, tabNames) {
   tabNames.forEach((t) => url.searchParams.append("ranges", `'${t}'`));
   url.searchParams.set("majorDimension", "ROWS");
 
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const res = await authedFetch(url);
   if (!res.ok) throw new Error(`Sheets values error ${res.status}`);
   const data = await res.json();
 
