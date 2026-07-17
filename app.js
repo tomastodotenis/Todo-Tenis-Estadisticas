@@ -1,99 +1,67 @@
 // ============================================================
-// CONFIGURACIÓN — completá esto antes de publicar la app
+// CONFIGURACIÓN
 // ============================================================
 const CONFIG = {
-  // Pegá acá el Client ID que te da Google Cloud Console
-  // (termina en .apps.googleusercontent.com)
-  CLIENT_ID: "177848532466-h59ae4tio4klac8uh9clhsb68voeapnp.apps.googleusercontent.com",
-
-  // Carpeta raíz de Drive con las ventas (Año > Mes > Planillas)
-  // Ya viene precargada con la que compartiste.
-  DEFAULT_ROOT_FOLDER_ID: "1DuyhPClinMyDpSaJKIcHLCVoHGkj5NuM",
-
-  SCOPES: "https://www.googleapis.com/auth/drive.readonly",
-  CACHE_KEY: "ttr_sales_cache_v1",
-  FOLDER_KEY: "ttr_root_folder_id",
-};
-
-// Encabezados esperados en las planillas (se buscan por texto, no por posición,
-// porque la fila donde empiezan puede variar entre meses)
-const HEADERS = {
-  title: "Título de la publicación",
-  units: "Unidades",
-  date: "Fecha de venta",
-  sku: "SKU",
-  variant: "Variante",
-};
-
-const MONTHS_ES = {
-  enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
-  julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9,
-  noviembre: 10, diciembre: 11,
+  // Pegá acá la "Web app URL" que te da Apps Script al implementar
+  // (Implementar > Nueva implementación > Aplicación web)
+  BACKEND_URL: "https://script.google.com/macros/s/AKfycbwwSG3ilgzkhZTKVO45_KcLUIjHJCJ2Q4v51xueiZj0iC_-ykmUvV_neHvRCyaUVHo40w/exec",
 };
 
 // ============================================================
 // ESTADO
 // ============================================================
-let accessToken = null;
-let tokenClient = null;
-let allRecords = []; // {date: Date, title, units, sku}
+let allRecords = []; // {date: Date, title, talle, sku, units}
 let currentPeriod = "day";
 let currentChartType = "bar";
+let currentView = "products";
+let currentFiltered = [];
 let chartInstance = null;
 
 const $ = (id) => document.getElementById(id);
 
 // ============================================================
-// AUTH (Google Identity Services)
+// CARGA DE DATOS DESDE EL BACKEND
 // ============================================================
-function initAuth() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CONFIG.CLIENT_ID,
-    scope: CONFIG.SCOPES,
-    callback: (resp) => {
-      if (resp.error) {
-        // Intento silencioso fallido (todavía no hay sesión de Google activa/autorizada
-        // en este navegador): dejamos el botón "Conectar con Drive" a mano.
-        setStatus(false, "Sin conectar. Tocá “Conectar con Drive” para empezar.");
-        return;
-      }
-      accessToken = resp.access_token;
-      onConnected();
-    },
-  });
-
-  // Al cargar la página, intentamos renovar el acceso sin mostrar ningún popup.
-  // Si el navegador ya tiene una sesión de Google activa y ya diste el permiso
-  // una vez antes, esto conecta solo, sin que nadie tenga que tocar nada.
-  tokenClient.requestAccessToken({ prompt: "" });
-}
-
-$("authBtn").addEventListener("click", () => {
-  if (CONFIG.CLIENT_ID.includes("PONÉ_TU_CLIENT_ID")) {
-    alert(
-      "Falta configurar el Client ID de Google.\n\n" +
-      "Abrí app.js y reemplazá CONFIG.CLIENT_ID por el que generaste en Google Cloud Console."
-    );
+async function loadData() {
+  if (CONFIG.BACKEND_URL.includes("PEGÁ_ACÁ")) {
+    setStatus(false, "Falta configurar la URL del backend en app.js (CONFIG.BACKEND_URL).");
     return;
   }
-  tokenClient.requestAccessToken({ prompt: accessToken ? "" : "consent" });
-});
+  setStatus(true, "Cargando datos...");
+  $("syncBtn").disabled = true;
+  $("syncBtn").textContent = "Actualizando...";
 
-function onConnected() {
-  setStatus(true, "Conectado. Elegí un período y presioná “Actualizar datos”.");
-  $("settingsPanel").hidden = true;
-  $("syncPanel").hidden = false;
-  $("filtersPanel").hidden = false;
-  $("viewPanel").hidden = false;
-  $("chartPanel").hidden = false;
-  $("tablePanel").hidden = false;
-  $("authBtn").textContent = "Reconectar";
+  try {
+    const res = await fetch(CONFIG.BACKEND_URL);
+    if (!res.ok) throw new Error(`Backend respondió ${res.status}`);
+    const data = await res.json();
 
-  const savedFolder = localStorage.getItem(CONFIG.FOLDER_KEY) || CONFIG.DEFAULT_ROOT_FOLDER_ID;
-  $("folderIdInput").value = savedFolder;
+    allRecords = (data.records || []).map((r) => ({
+      ...r,
+      date: r.date ? new Date(r.date) : null,
+    }));
 
-  loadCacheFromStorage();
-  renderForCurrentFilters();
+    const lastSync = data.lastSync ? new Date(data.lastSync) : null;
+    const lastSyncLabel = lastSync
+      ? lastSync.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+      : "—";
+
+    setStatus(true, `Datos al día. Última actualización del servidor: ${lastSyncLabel}.`);
+    $("cacheInfo").textContent = `${allRecords.length} filas de venta cargadas`;
+
+    $("viewPanel").hidden = false;
+    $("filtersPanel").hidden = false;
+    $("chartPanel").hidden = false;
+    $("tablePanel").hidden = false;
+
+    renderForCurrentFilters();
+  } catch (err) {
+    console.error(err);
+    setStatus(false, "No se pudo cargar: " + err.message);
+  } finally {
+    $("syncBtn").disabled = false;
+    $("syncBtn").textContent = "Actualizar";
+  }
 }
 
 function setStatus(ok, text) {
@@ -101,295 +69,7 @@ function setStatus(ok, text) {
   $("statusText").textContent = text;
 }
 
-// ============================================================
-// SETTINGS PANEL TOGGLE
-// ============================================================
-$("settingsToggle").addEventListener("click", () => {
-  $("settingsPanel").hidden = !$("settingsPanel").hidden;
-});
-// Acepta tanto un ID de carpeta pelado como una URL completa de Drive
-// (ej: https://drive.google.com/drive/folders/XXXX?usp=sharing) y devuelve solo el ID
-function extractFolderId(value) {
-  if (!value) return "";
-  const trimmed = value.trim();
-  const match = trimmed.match(/\/folders\/([a-zA-Z0-9_-]+)/);
-  if (match) return match[1];
-  return trimmed.split("?")[0]; // por si pegan la URL sin /folders/ o ya es un ID limpio
-}
-
-$("saveFolderBtn").addEventListener("click", () => {
-  const raw = $("folderIdInput").value.trim();
-  if (!raw) return;
-  const val = extractFolderId(raw);
-  localStorage.setItem(CONFIG.FOLDER_KEY, val);
-  $("folderIdInput").value = val;
-  $("settingsPanel").hidden = true;
-  setStatus(true, "Carpeta guardada. Presioná “Actualizar datos” para sincronizar.");
-});
-
-// Pide un token nuevo en silencio (sin popup) — se usa cuando el token
-// vigente venció a mitad de una sesión larga.
-function refreshTokenSilently() {
-  return new Promise((resolve) => {
-    tokenClient.callback = (resp) => {
-      if (!resp.error) accessToken = resp.access_token;
-      resolve();
-    };
-    tokenClient.requestAccessToken({ prompt: "" });
-  });
-}
-
-// fetch autenticado que reintenta una vez con token renovado si da 401
-async function authedFetch(url) {
-  let res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (res.status === 401) {
-    await refreshTokenSilently();
-    res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-  }
-  return res;
-}
-
-// ============================================================
-// DRIVE — recorrido recursivo de carpetas
-// ============================================================
-async function driveList(q, fields) {
-  let files = [];
-  let pageToken = null;
-  do {
-    const url = new URL("https://www.googleapis.com/drive/v3/files");
-    url.searchParams.set("q", q);
-    url.searchParams.set("fields", `nextPageToken, files(${fields})`);
-    url.searchParams.set("pageSize", "1000");
-    if (pageToken) url.searchParams.set("pageToken", pageToken);
-
-    const res = await authedFetch(url);
-    if (!res.ok) throw new Error(`Drive API error ${res.status}`);
-    const data = await res.json();
-    files = files.concat(data.files || []);
-    pageToken = data.nextPageToken || null;
-  } while (pageToken);
-  return files;
-}
-
-// Recorre recursivamente y devuelve todos los archivos de Sheets encontrados
-async function collectSpreadsheets(rootFolderId, onFolder) {
-  const spreadsheets = [];
-  const queue = [rootFolderId];
-
-  while (queue.length) {
-    const folderId = queue.shift();
-    if (onFolder) onFolder(folderId);
-
-    const children = await driveList(
-      `'${folderId}' in parents and trashed = false`,
-      "id, name, mimeType, modifiedTime"
-    );
-
-    for (const item of children) {
-      if (item.mimeType === "application/vnd.google-apps.folder") {
-        queue.push(item.id);
-      } else if (item.mimeType === "application/vnd.google-apps.spreadsheet") {
-        spreadsheets.push(item);
-      }
-    }
-  }
-  return spreadsheets;
-}
-
-// ============================================================
-// SHEETS — lectura y parseo
-// ============================================================
-async function fetchSpreadsheetTabs(spreadsheetId) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`;
-  const res = await authedFetch(url);
-  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
-  const data = await res.json();
-  return (data.sheets || []).map((s) => s.properties.title);
-}
-
-async function fetchSpreadsheetValues(spreadsheetId, tabNames) {
-  if (!tabNames.length) return {};
-  const url = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet`);
-  tabNames.forEach((t) => url.searchParams.append("ranges", `'${t}'`));
-  url.searchParams.set("majorDimension", "ROWS");
-
-  const res = await authedFetch(url);
-  if (!res.ok) throw new Error(`Sheets values error ${res.status}`);
-  const data = await res.json();
-
-  const out = {};
-  (data.valueRanges || []).forEach((vr, i) => {
-    out[tabNames[i]] = vr.values || [];
-  });
-  return out;
-}
-
-// Busca la fila de encabezado buscando el texto exacto, sin asumir una fila fija
-function findHeaderRow(rows) {
-  for (let r = 0; r < Math.min(rows.length, 10); r++) {
-    const row = rows[r].map((c) => (c || "").trim());
-    if (row.includes(HEADERS.title) && row.includes(HEADERS.units)) {
-      return { rowIndex: r, cols: row };
-    }
-  }
-  return null;
-}
-
-function parseSpanishDate(str) {
-  if (!str) return null;
-  const m = str.match(/(\d{1,2}) de (\w+) de (\d{4})(?:\s+(\d{1,2}):(\d{2}))?/i);
-  if (!m) return null;
-  const day = parseInt(m[1], 10);
-  const month = MONTHS_ES[m[2].toLowerCase()];
-  const year = parseInt(m[3], 10);
-  const hour = m[4] ? parseInt(m[4], 10) : 0;
-  const min = m[5] ? parseInt(m[5], 10) : 0;
-  if (month === undefined) return null;
-  return new Date(year, month, day, hour, min);
-}
-
-// Extrae el valor de "Talle" desde el texto de Variante, ej:
-// "Color : Negro | Diseño de la tela : Lisa | Talle : 9.5 US" -> "9.5 US"
-function extractTalle(variantText) {
-  if (!variantText) return "";
-  const m = variantText.match(/Talle\s*:\s*([^|]+)/i);
-  return m ? m[1].trim() : "";
-}
-
-function parseTabRows(rows) {
-  const header = findHeaderRow(rows);
-  if (!header) return [];
-
-  const titleCol = header.cols.indexOf(HEADERS.title);
-  const unitsCol = header.cols.indexOf(HEADERS.units);
-  const dateCol = header.cols.indexOf(HEADERS.date);
-  const skuCol = header.cols.indexOf(HEADERS.sku);
-  const variantCol = header.cols.indexOf(HEADERS.variant);
-
-  const records = [];
-  for (let r = header.rowIndex + 1; r < rows.length; r++) {
-    const row = rows[r];
-    if (!row) continue;
-    const title = (row[titleCol] || "").trim();
-    const unitsRaw = (row[unitsCol] || "").trim();
-    if (!title || !unitsRaw) continue; // filas resumen de "Paquete de N productos" no tienen título propio
-
-    const units = parseInt(unitsRaw.replace(/\./g, ""), 10);
-    if (!Number.isFinite(units) || units <= 0) continue;
-
-    const date = dateCol >= 0 ? parseSpanishDate(row[dateCol]) : null;
-    const talle = variantCol >= 0 ? extractTalle(row[variantCol]) : "";
-
-    records.push({
-      title,
-      units,
-      sku: skuCol >= 0 ? (row[skuCol] || "").trim() : "",
-      talle,
-      date,
-    });
-  }
-  return records;
-}
-
-// ============================================================
-// CACHE (localStorage, por archivo + modifiedTime)
-// ============================================================
-let fileCache = {}; // { [fileId]: { modifiedTime, records } }
-
-function loadCacheFromStorage() {
-  try {
-    const raw = localStorage.getItem(CONFIG.CACHE_KEY);
-    fileCache = raw ? JSON.parse(raw) : {};
-  } catch {
-    fileCache = {};
-  }
-  rebuildAllRecordsFromCache();
-}
-
-function rebuildAllRecordsFromCache() {
-  allRecords = [];
-  for (const fileId in fileCache) {
-    const entry = fileCache[fileId];
-    (entry.records || []).forEach((r) => {
-      allRecords.push({ ...r, date: r.date ? new Date(r.date) : null });
-    });
-  }
-  updateCacheInfo();
-}
-
-function saveCacheToStorage() {
-  try {
-    localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(fileCache));
-  } catch (e) {
-    console.warn("No se pudo guardar el cache local (puede estar lleno):", e);
-  }
-}
-
-function updateCacheInfo() {
-  const files = Object.keys(fileCache).length;
-  $("cacheInfo").textContent = files
-    ? `${files} planillas en cache · ${allRecords.length} filas de venta`
-    : "";
-}
-
-// ============================================================
-// SYNC — botón principal
-// ============================================================
-$("syncBtn").addEventListener("click", runSync);
-
-async function runSync() {
-  const rootFolderId = extractFolderId(localStorage.getItem(CONFIG.FOLDER_KEY) || CONFIG.DEFAULT_ROOT_FOLDER_ID);
-  const btn = $("syncBtn");
-  btn.disabled = true;
-  btn.textContent = "Buscando planillas...";
-  $("progressTrack").hidden = false;
-  $("progressFill").style.width = "5%";
-
-  try {
-    const spreadsheets = await collectSpreadsheets(rootFolderId);
-    const total = spreadsheets.length;
-    $("syncProgress").textContent = `0 / ${total}`;
-
-    let done = 0;
-    for (const file of spreadsheets) {
-      const cached = fileCache[file.id];
-      if (!cached || cached.modifiedTime !== file.modifiedTime) {
-        const tabs = await fetchSpreadsheetTabs(file.id);
-        const values = await fetchSpreadsheetValues(file.id, tabs);
-        let records = [];
-        for (const tabName of tabs) {
-          records = records.concat(parseTabRows(values[tabName] || []));
-        }
-        fileCache[file.id] = {
-          modifiedTime: file.modifiedTime,
-          name: file.name,
-          records: records.map((r) => ({ ...r, date: r.date ? r.date.toISOString() : null })),
-        };
-      }
-      done++;
-      $("syncProgress").textContent = `${done} / ${total}`;
-      $("progressFill").style.width = `${5 + (done / Math.max(total, 1)) * 95}%`;
-    }
-
-    // Elimina del cache archivos que ya no existen en Drive
-    const validIds = new Set(spreadsheets.map((f) => f.id));
-    Object.keys(fileCache).forEach((id) => {
-      if (!validIds.has(id)) delete fileCache[id];
-    });
-
-    saveCacheToStorage();
-    rebuildAllRecordsFromCache();
-    setStatus(true, `Sincronizado: ${total} planillas revisadas.`);
-    renderForCurrentFilters();
-  } catch (err) {
-    console.error(err);
-    setStatus(false, "Error al sincronizar: " + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Actualizar datos";
-    $("progressTrack").hidden = true;
-  }
-}
+$("syncBtn").addEventListener("click", loadData);
 
 // ============================================================
 // FILTROS DE PERÍODO
@@ -492,11 +172,8 @@ function getSelectedRange() {
 }
 
 // ============================================================
-// AGREGACIÓN Y RENDER
+// VISTA: PRODUCTOS / TALLES
 // ============================================================
-let currentView = "products"; // "products" | "sizes"
-let currentFiltered = []; // último set de registros filtrado por período
-
 document.querySelectorAll("#viewSegmented .seg").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#viewSegmented .seg").forEach((b) => b.classList.remove("active"));
@@ -541,7 +218,6 @@ function renderProductsView() {
   renderLeaderboard(ranked.slice(0, 20));
 }
 
-// Arma el desplegable de productos del período actual, ordenado por unidades
 function populateProductSelect() {
   const totals = new Map();
   currentFiltered.forEach((r) => {
@@ -584,6 +260,9 @@ function renderSizesView() {
   renderLeaderboard(ranked);
 }
 
+// ============================================================
+// GRÁFICO Y TABLA
+// ============================================================
 function renderChart(ranked) {
   const canvas = $("mainChart");
   $("chartEmpty").hidden = ranked.length > 0;
@@ -660,11 +339,5 @@ document.querySelectorAll("#chartSegmented .seg").forEach((btn) => {
 // ============================================================
 window.addEventListener("load", () => {
   renderFilterControls();
-  // GIS se carga async; esperamos a que esté disponible
-  const waitForGis = setInterval(() => {
-    if (window.google && google.accounts && google.accounts.oauth2) {
-      clearInterval(waitForGis);
-      initAuth();
-    }
-  }, 100);
+  loadData();
 });
