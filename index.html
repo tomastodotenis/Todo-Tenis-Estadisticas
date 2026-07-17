@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@700;800&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css?v=1" />
+<link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
 
@@ -26,34 +26,24 @@
           <p>Todo Tenis &amp; Running</p>
         </div>
       </div>
-      <button id="authBtn" class="btn btn-accent">Conectar con Drive</button>
+      <button id="syncBtn" class="btn btn-accent">Actualizar</button>
     </div>
 
     <div class="board-status" id="statusBar">
       <span class="dot" id="statusDot"></span>
-      <span id="statusText">Sin conectar. Iniciá sesión con Google para leer la carpeta de ventas.</span>
+      <span id="statusText">Cargando datos...</span>
     </div>
   </header>
 
-  <!-- SETTINGS (folder id) -->
-  <section class="panel panel-settings" id="settingsPanel" hidden>
-    <label for="folderIdInput">ID de carpeta raíz en Drive</label>
-    <div class="row-inline">
-      <input type="text" id="folderIdInput" placeholder="1DuyhPClinMyDpSaJKIcHLCVoHGkj5NuM" />
-      <button id="saveFolderBtn" class="btn btn-ghost">Guardar</button>
+  <!-- VIEW TOGGLE: PRODUCTOS / TALLES -->
+  <section class="panel" id="viewPanel" hidden>
+    <div class="segmented" id="viewSegmented">
+      <button data-view="products" class="seg active">Productos</button>
+      <button data-view="sizes" class="seg">Talles</button>
     </div>
-    <p class="hint">Se recorren año → mes → planillas → pestañas de día, de forma recursiva.</p>
-  </section>
-
-  <!-- SYNC -->
-  <section class="panel" id="syncPanel" hidden>
-    <div class="sync-row">
-      <button id="syncBtn" class="btn btn-primary">Actualizar datos</button>
-      <button id="settingsToggle" class="btn btn-ghost btn-icon" title="Configuración">⚙</button>
-      <div class="sync-progress" id="syncProgress"></div>
-    </div>
-    <div class="progress-track" id="progressTrack" hidden>
-      <div class="progress-fill" id="progressFill"></div>
+    <div class="filter-controls" id="productPicker" hidden>
+      <label class="hint" style="margin:0 0 6px;">Ver talles de:</label>
+      <select id="productSelect"></select>
     </div>
   </section>
 
@@ -73,18 +63,6 @@
     <div class="filter-meta">
       <span id="periodLabel">—</span>
       <span id="totalUnitsLabel">0 unidades</span>
-    </div>
-  </section>
-
-  <!-- VIEW TOGGLE: PRODUCTOS / TALLES -->
-  <section class="panel" id="viewPanel" hidden>
-    <div class="segmented" id="viewSegmented">
-      <button data-view="products" class="seg active">Productos</button>
-      <button data-view="sizes" class="seg">Talles</button>
-    </div>
-    <div class="filter-controls" id="productPicker" hidden>
-      <label class="hint" style="margin:0 0 6px;">Ver talles de:</label>
-      <select id="productSelect"></select>
     </div>
   </section>
 
@@ -119,10 +97,7 @@
 
 </div>
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<!-- IMPORTANTE: subí el número de ?v= cada vez que actualices app.js o styles.css,
-     así los navegadores de todos bajan la versión nueva en vez de usar la vieja en caché -->
-<script src="app.js?v=2"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
