@@ -4,7 +4,7 @@
 const CONFIG = {
   // Pegá acá la "Web app URL" que te da Apps Script al implementar
   // (Implementar > Nueva implementación > Aplicación web)
-  BACKEND_URL: "https://script.google.com/macros/s/AKfycbwwSG3ilgzkhZTKVO45_KcLUIjHJCJ2Q4v51xueiZj0iC_-ykmUvV_neHvRCyaUVHo40w/exec",
+  BACKEND_URL: "https://script.google.com/macros/s/AKfycbzi82oXL8KPJED8ndog9EWBMBVB3H2nzPw_1s01zdSTMkcsB_z5QGtquUy3xh9R368z/exec",
 };
 
 // ============================================================
