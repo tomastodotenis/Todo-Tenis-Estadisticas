@@ -54,7 +54,7 @@ body{
   gap: 10px;
 }
 .brand-logo{
-  height: 80px;
+  height: 120px;
   width: auto;
   flex-shrink: 0;
 }
