@@ -304,6 +304,6 @@ body{
 }
 
 @media (max-width: 420px){
-  .brand-logo{ height: 38px; }
+  .brand-logo{ height: 58px; }
   .brand-text h1{ font-size: 16px; }
 }
