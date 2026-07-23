@@ -63,7 +63,6 @@ body{
 }
 .brand-logo{
   height: 120px;
-  outline: 2px solid red;
   width: auto;
   flex-shrink: 0;
 }
@@ -72,7 +71,7 @@ body{
   font-weight: 800;
   font-size: 20px;
   letter-spacing: -0.01em;
-  margin: 0;
+  margin: -25;
   text-transform: uppercase;
   color: var(--lime);
 }
