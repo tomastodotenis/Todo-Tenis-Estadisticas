@@ -6,18 +6,16 @@
 <meta name="theme-color" content="#0B3556" />
 <title>Top Ventas — Todo Tenis &amp; Running</title>
 <link rel="manifest" href="manifest.json" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2246%22 fill=%22%23D6FF3F%22/><path d=%22M8 40 Q50 62 92 40%22 stroke=%22%230B3556%22 stroke-width=%227%22 fill=%22none%22/><path d=%22M8 60 Q50 38 92 60%22 stroke=%22%230B3556%22 stroke-width=%227%22 fill=%22none%22/></svg>" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@700;800&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body>
-
 <div class="app-bg" aria-hidden="true"></div>
-
 <div class="app">
-
   <!-- HEADER / SCOREBOARD -->
   <header class="board">
     <div class="board-top">
@@ -29,13 +27,11 @@
       </div>
       <button id="syncBtn" class="btn btn-accent">Actualizar</button>
     </div>
-
     <div class="board-status" id="statusBar">
       <span class="dot" id="statusDot"></span>
       <span id="statusText">Cargando datos...</span>
     </div>
   </header>
-
   <!-- VIEW TOGGLE: PRODUCTOS / TALLES -->
   <section class="panel" id="viewPanel" hidden>
     <div class="segmented" id="viewSegmented">
@@ -47,7 +43,6 @@
       <select id="productSelect"></select>
     </div>
   </section>
-
   <!-- FILTERS -->
   <section class="panel filters" id="filtersPanel" hidden>
     <div class="segmented" id="periodSegmented">
@@ -56,17 +51,14 @@
       <button data-period="month" class="seg">Mes</button>
       <button data-period="range" class="seg">Rango</button>
     </div>
-
     <div class="filter-controls" id="filterControls">
       <input type="date" id="dayInput" />
     </div>
-
     <div class="filter-meta">
       <span id="periodLabel">—</span>
       <span id="totalUnitsLabel">0 unidades</span>
     </div>
   </section>
-
   <!-- CHART VIEW TOGGLE -->
   <section class="panel chart-panel" id="chartPanel" hidden>
     <div class="chart-head">
@@ -81,7 +73,6 @@
     </div>
     <p class="empty-state" id="chartEmpty" hidden>No hay ventas registradas en este período.</p>
   </section>
-
   <!-- LEADERBOARD TABLE -->
   <section class="panel" id="tablePanel" hidden>
     <div class="lb-head">
@@ -91,13 +82,10 @@
     </div>
     <ol class="leaderboard" id="leaderboard"></ol>
   </section>
-
   <footer class="foot">
     <span id="cacheInfo"></span>
   </footer>
-
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="app.js?v=8"></script>
 </body>
