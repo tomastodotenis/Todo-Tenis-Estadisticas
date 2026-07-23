@@ -62,7 +62,7 @@ body{
   gap: 10px;
 }
 .brand-logo{
-  height: 120px;
+  height: 80px;
   width: auto;
   flex-shrink: 0;
 }
