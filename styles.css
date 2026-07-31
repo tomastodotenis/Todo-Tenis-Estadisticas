@@ -59,12 +59,13 @@ body{
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 2px;
 }
 .brand-logo{
-  height: 60px;
+  height: 80px;
   width: auto;
   flex-shrink: 0;
+  margin-bottom: -6px;
 }
 .brand-text h1{
   font-family: var(--font-display);
@@ -126,7 +127,7 @@ body{
 
 /* ---------- PANELS ---------- */
 .panel{
-  background: rgba(15, 66, 103, 0.55);
+  background: var(--panel);
   border: 1px solid var(--panel-line);
   border-radius: var(--radius);
   padding: 16px;
@@ -172,6 +173,38 @@ body{
   background: var(--lime);
   transition: width 0.2s ease;
 }
+
+/* ---------- SEARCH ---------- */
+.search-row{
+  position: relative;
+  margin-bottom: 12px;
+}
+.search-row input[type="search"]{
+  width: 100%;
+  background: var(--court-blue-deep);
+  border: 1px solid var(--panel-line);
+  color: var(--white);
+  border-radius: 10px;
+  padding: 10px 36px 10px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+.search-row input[type="search"]::placeholder{ color: var(--ink-soft); }
+.search-row input[type="search"]::-webkit-search-cancel-button{ display: none; }
+.search-clear{
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+}
+.search-clear:hover{ color: var(--white); }
 
 /* ---------- FILTERS ---------- */
 .segmented{
@@ -273,7 +306,7 @@ body{
 }
 .leaderboard li{
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   padding: 11px 6px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -285,16 +318,15 @@ body{
   font-weight: 700;
   color: var(--lime-dim);
   font-size: 13px;
-  padding-top: 1px;
 }
 .leaderboard li:nth-child(1) .lb-num{ color: var(--lime); font-size: 15px; }
 .lb-title{
   flex: 1;
   font-size: 13px;
-  line-height: 1.35;
-  overflow: visible;
-  white-space: normal;
-  word-break: break-word;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .lb-val{
   font-family: var(--font-mono);
@@ -302,7 +334,6 @@ body{
   font-size: 13px;
   width: 60px;
   text-align: right;
-  padding-top 1px;
 }
 
 .foot{

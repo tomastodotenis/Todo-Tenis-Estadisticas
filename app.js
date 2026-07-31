@@ -15,6 +15,7 @@ let currentPeriod = "day";
 let currentChartType = "bar";
 let currentView = "products";
 let currentFiltered = [];
+let searchQuery = "";
 let chartInstance = null;
 
 const $ = (id) => document.getElementById(id);
@@ -70,6 +71,38 @@ function setStatus(ok, text) {
 }
 
 $("syncBtn").addEventListener("click", loadData);
+
+// ============================================================
+// BUSCADOR (producto / marca)
+// ============================================================
+function normalizeText(str) {
+  return String(str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // quita tildes/acentos
+}
+
+// Matchea si el título contiene TODAS las palabras de la búsqueda,
+// sin importar el orden (ej: "Zapatilla Reebok" o "Reebok Zapatilla").
+function matchesSearch(title, query) {
+  if (!query) return true;
+  const words = normalizeText(query).split(/\s+/).filter(Boolean);
+  const normTitle = normalizeText(title);
+  return words.every((w) => normTitle.includes(w));
+}
+
+$("searchInput").addEventListener("input", () => {
+  searchQuery = $("searchInput").value;
+  $("searchClear").hidden = !searchQuery;
+  renderForCurrentFilters();
+});
+
+$("searchClear").addEventListener("click", () => {
+  $("searchInput").value = "";
+  searchQuery = "";
+  $("searchClear").hidden = true;
+  renderForCurrentFilters();
+});
 
 // ============================================================
 // FILTROS DE PERÍODO
@@ -190,7 +223,10 @@ function renderForCurrentFilters() {
   const range = getSelectedRange();
   if (!range) return;
 
-  currentFiltered = allRecords.filter((r) => r.date && r.date >= range.from && r.date <= range.to);
+  currentFiltered = allRecords
+    .filter((r) => r.date && r.date >= range.from && r.date <= range.to)
+    .filter((r) => matchesSearch(r.title, searchQuery));
+
   const totalUnits = currentFiltered.reduce((sum, r) => sum + r.units, 0);
 
   $("periodLabel").textContent = range.label;
@@ -205,7 +241,7 @@ function renderForCurrentFilters() {
 }
 
 function renderProductsView() {
-  $("chartTitle").textContent = "Ranking de productos";
+  $("chartTitle").textContent = searchQuery ? `Ranking de productos — "${searchQuery}"` : "Ranking de productos";
   $("lbNameHead").textContent = "Producto";
 
   const totals = new Map();
@@ -227,18 +263,31 @@ function populateProductSelect() {
 
   const select = $("productSelect");
   const previous = select.value;
-  select.innerHTML = ranked
+
+  let optionsHtml = "";
+  if (searchQuery && ranked.length > 1) {
+    const allUnits = ranked.reduce((sum, [, units]) => sum + units, 0);
+    optionsHtml += `<option value="__ALL__">— Todos los resultados de "${escapeHtml(searchQuery)}" (${allUnits}) —</option>`;
+  }
+  optionsHtml += ranked
     .map(([title, units]) => `<option value="${escapeHtml(title)}">${escapeHtml(title)} (${units})</option>`)
     .join("");
 
-  if (ranked.some(([title]) => title === previous)) {
+  select.innerHTML = optionsHtml;
+
+  if (previous === "__ALL__" || ranked.some(([title]) => title === previous)) {
     select.value = previous;
   }
 }
 
 function renderSizesView() {
   const product = $("productSelect").value;
-  $("chartTitle").textContent = product ? "Talles vendidos" : "Talles";
+  const isAll = product === "__ALL__";
+  $("chartTitle").textContent = isAll
+    ? `Talles vendidos — todos los resultados de "${searchQuery}"`
+    : product
+    ? "Talles vendidos"
+    : "Talles";
   $("lbNameHead").textContent = "Talle";
 
   if (!product) {
@@ -247,13 +296,13 @@ function renderSizesView() {
     return;
   }
 
+  const source = isAll ? currentFiltered : currentFiltered.filter((r) => r.title === product);
+
   const totals = new Map();
-  currentFiltered
-    .filter((r) => r.title === product)
-    .forEach((r) => {
-      const key = r.talle || "Sin talle";
-      totals.set(key, (totals.get(key) || 0) + r.units);
-    });
+  source.forEach((r) => {
+    const key = r.talle || "Sin talle";
+    totals.set(key, (totals.get(key) || 0) + r.units);
+  });
 
   const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]);
   renderChart(ranked);
@@ -265,7 +314,13 @@ function renderSizesView() {
 // ============================================================
 function renderChart(ranked) {
   const canvas = $("mainChart");
-  $("chartEmpty").hidden = ranked.length > 0;
+  const emptyEl = $("chartEmpty");
+  emptyEl.hidden = ranked.length > 0;
+  if (ranked.length === 0) {
+    emptyEl.textContent = searchQuery
+      ? `No se encontraron ventas para "${searchQuery}" en este período.`
+      : "No hay ventas registradas en este período.";
+  }
   canvas.style.display = ranked.length ? "block" : "none";
   if (chartInstance) chartInstance.destroy();
   if (!ranked.length) return;
