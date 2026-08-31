@@ -390,6 +390,20 @@ document.querySelectorAll("#chartSegmented .seg").forEach((btn) => {
 });
 
 // ============================================================
+// IMPRIMIR RANKING
+// ============================================================
+$("printBtn").addEventListener("click", () => {
+  const parts = [
+    $("lbNameHead").textContent === "Talle" ? "Talles vendidos" : "Ranking de productos",
+    $("periodLabel").textContent,
+    $("totalUnitsLabel").textContent,
+  ];
+  if (searchQuery) parts.push(`Búsqueda: "${searchQuery}"`);
+  document.querySelector(".print-only-title").textContent = parts.join(" — ");
+  window.print();
+});
+
+// ============================================================
 // INIT
 // ============================================================
 window.addEventListener("load", () => {

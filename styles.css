@@ -124,6 +124,7 @@ body{
   border: 1px solid var(--panel-line);
 }
 .btn-icon{ flex: 0 0 auto; padding: 10px 12px; }
+.btn-sm{ padding: 7px 12px; font-size: 12px; }
 
 /* ---------- PANELS ---------- */
 .panel{
@@ -284,6 +285,11 @@ body{
 }
 
 /* ---------- LEADERBOARD ---------- */
+.lb-toolbar{
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
 .lb-head{
   display: flex;
   align-items: center;
@@ -346,4 +352,28 @@ body{
 @media (max-width: 420px){
   .brand-logo{ height: 38px; }
   .brand-text h1{ font-size: 16px; }
+}
+
+/* ---------- IMPRESIÓN ---------- */
+.print-only-title{ display: none; }
+
+@media print {
+  body::before, body::after, .app-bg { display: none !important; }
+  header.board, #viewPanel, #filtersPanel, #chartPanel, #printBtn, .foot {
+    display: none !important;
+  }
+  body { background: #fff !important; color: #000 !important; }
+  .app { max-width: 100%; padding: 0; }
+  #tablePanel { border: none; box-shadow: none; background: #fff; padding: 0; }
+  .lb-toolbar { display: none !important; }
+  .print-only-title{
+    display: block;
+    font-weight: 800;
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: #000;
+  }
+  .lb-head, .lb-title, .lb-val, .lb-num { color: #000 !important; }
+  .lb-title { overflow: visible; white-space: normal; text-overflow: clip; }
+  .leaderboard li { border-bottom: 1px solid #ccc; }
 }
